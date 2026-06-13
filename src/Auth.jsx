@@ -1,113 +1,122 @@
 import React, { useState } from 'react';
 import { supabase } from './supabaseClient';
+import { BookOpen, Loader2 } from 'lucide-react';
+
+const inputCls = "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-700/40 focus:border-amber-700";
 
 export default function Auth({ onAuthSuccess }) {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const [info, setInfo] = useState('');
 
-  const handleAuth = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setLoading(true);
     setError('');
-    setMessage('');
+    setInfo('');
+    setLoading(true);
 
-    if (isSignUp) {
-      // Handle Sign Up
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+    if (mode === 'signup') {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      setLoading(false);
       if (error) {
         setError(error.message);
-      } else {
-        setMessage('Registration successful! Check your email if verification is enabled.');
-        if (onAuthSuccess && data.user) onAuthSuccess(data.user);
+        return;
       }
-    } else {
-      // Handle Sign In
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) {
-        setError(error.message);
+      if (data.session) {
+        onAuthSuccess(data.session);
       } else {
-        if (onAuthSuccess && data.user) onAuthSuccess(data.user);
+        setInfo('Check your email to confirm your account, then log in.');
+        setMode('login');
       }
+      return;
     }
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-  };
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    onAuthSuccess(data.session);
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-sm p-8 border border-gray-100">
-        
-        {/* App Branding */}
+    <div className="min-h-screen bg-stone-100 text-stone-800 flex items-center justify-center px-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <style>{`.font-serif { font-family: 'Fraunces', serif; }`}</style>
+      <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Ledger & Lots</h2>
-          <p className="text-sm text-gray-500 mt-2">Secure your workspaces and ledger accounts</p>
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-700 text-white mb-3">
+            <BookOpen size={22} />
+          </div>
+          <h1 className="font-serif text-3xl text-stone-800">Ledger & Lots</h1>
+          <p className="text-stone-500 text-sm mt-1 font-mono">your businesses, your loans, one place</p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
-          <button
-            type="button"
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${!isSignUp ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
-            onClick={() => { setIsSignUp(false); setError(''); setMessage(''); }}
-          >
-            Login
-          </button>
-          <button
-            type="button"
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${isSignUp ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
-            onClick={() => { setIsSignUp(true); setError(''); setMessage(''); }}
-          >
-            Sign Up
-          </button>
+        <div className="bg-white rounded-2xl border border-stone-200 p-6">
+          <div className="grid grid-cols-2 gap-2 mb-5">
+            <button
+              type="button"
+              onClick={() => { setMode('login'); setError(''); setInfo(''); }}
+              className={`py-2 rounded-lg text-sm font-medium border transition-colors ${mode === 'login' ? 'bg-amber-700 text-white border-amber-700' : 'bg-white border-stone-300 text-stone-600'}`}
+            >
+              Log in
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('signup'); setError(''); setInfo(''); }}
+              className={`py-2 rounded-lg text-sm font-medium border transition-colors ${mode === 'signup' ? 'bg-amber-700 text-white border-amber-700' : 'bg-white border-stone-300 text-stone-600'}`}
+            >
+              Sign up
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <label className="block mb-3">
+              <span className="text-xs uppercase tracking-wide text-stone-500 font-medium">Email</span>
+              <input
+                type="email"
+                required
+                className={inputCls + " mt-1"}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+            </label>
+            <label className="block mb-4">
+              <span className="text-xs uppercase tracking-wide text-stone-500 font-medium">Password</span>
+              <input
+                type="password"
+                required
+                minLength={6}
+                className={inputCls + " mt-1"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+              />
+            </label>
+
+            {error && <p className="text-rose-600 text-sm mb-3">{error}</p>}
+            {info && <p className="text-emerald-700 text-sm mb-3">{info}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-amber-700 text-white py-2.5 rounded-lg font-medium hover:bg-amber-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {loading && <Loader2 className="animate-spin" size={16} />}
+              {mode === 'login' ? 'Log in' : 'Create account'}
+            </button>
+          </form>
         </div>
 
-        {/* Status Messages */}
-        {error && <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 rounded-lg border border-red-100">{error}</div>}
-        {message && <div className="mb-4 p-3 text-sm text-green-600 bg-green-50 rounded-lg border border-green-100">{message}</div>}
-
-        {/* Auth Form */}
-        <form onSubmit={handleAuth} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-600/20 focus:border-orange-600 transition-all text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Password</label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-600/20 focus:border-orange-600 transition-all text-sm"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-[#c05615] hover:bg-[#a64710] text-white font-medium rounded-xl transition-all shadow-sm flex justify-center items-center text-sm disabled:opacity-50"
-          >
-            {loading ? 'Processing...' : isSignUp ? 'Create Account' : 'Sign In'}
-          </button>
-        </form>
+        <p className="text-center text-xs text-stone-400 mt-4 font-mono">
+          Your data is private to your account.
+        </p>
       </div>
     </div>
   );
