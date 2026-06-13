@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, Trash2, TrendingUp, TrendingDown, Wallet, Building2, Landmark, X, ChevronRight, Copy, Check, Loader2 } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import Auth from './Auth'; // <--- ADD THIS LINE
 
 const ZMW = (n) => 'K' + Number(n || 0).toLocaleString('en-ZM', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -57,7 +58,35 @@ function Field({ label, children }) {
 
 const inputCls = "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-700/40 focus:border-amber-700";
 
-export default function App() {
+export default function App(  // 1. Setup authentication states
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // 2. Listen for login/logout changes
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // 3. Keep screen blank/loading while checking auth status
+  if (authLoading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>;
+  }
+
+  // 4. SECURITY ACCESS GATE: If not logged in, force the Auth screen
+  if (!session) {
+    return <Auth onAuthSuccess={(userSession) => setSession(userSession)} />;
+  }
+) {
   const { bookId } = useParams();
   const navigate = useNavigate();
 
