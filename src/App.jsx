@@ -1,8 +1,13 @@
+Now the big one — src/App.jsx. Edit in place: open the file, “…” → Edit file → In place, select ALL existing content, delete it completely, then paste the full content below.
+This is long, so take your time copying. Make sure the code block has fully loaded on your screen before selecting/copying — scroll to the very bottom of this message first to let it render, then scroll back up and copy from the top.
+Path (existing file): src/App.jsx
+New content:
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Trash2, TrendingUp, TrendingDown, Wallet, Building2, Landmark, X, ChevronRight, Copy, Check, Loader2 } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, TrendingDown, Wallet, Building2, Landmark, X, ChevronRight, LogOut, Check, Loader2 } from 'lucide-react';
 import { supabase } from './supabaseClient';
-import Auth from './Auth'; // <--- ADD THIS LINE
+import Auth from './Auth';
+import { Welcome, ProfileSetup } from './Onboarding';
 
 const ZMW = (n) => 'K' + Number(n || 0).toLocaleString('en-ZM', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -59,104 +64,17 @@ function Field({ label, children }) {
 const inputCls = "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-700/40 focus:border-amber-700";
 
 export default function App() {
-  // 1. Setup authentication states
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [onboardingStep, setOnboardingStep] = useState('welcome'); // 'welcome', 'setup', or 'complete'
-const [profileName, setProfileName] = useState('');
 
-
-  // 2. Listen for login/logout changes
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setAuthLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setAuthLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // 3. Keep screen blank/loading while checking auth status
-  if (authLoading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>;
-  }
-
-  // 4. SECURITY ACCESS GATE: If not logged in, force the Auth screen
-    // 4. SECURITY ACCESS GATE & ONBOARDING FLOW
-  if (!session) {
-    return <Auth onAuthSuccess={(userSession) => setSession(userSession)} />;
-  }
-
-  // STEP A: Welcome Landing Page
-  if (onboardingStep === 'welcome') {
-    return (
-      <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', fontFamily: 'sans-serif', maxWidth: '500px', margin: '4rem auto', backgroundColor: '#111827', borderRadius: '12px', border: '1px solid #1f2937', color: '#f3f4f6' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '1rem' }}>Welcome to GothamBank Workspace 👋</h1>
-        <p style={{ color: '#9ca3af', lineHeight: '1.5', marginBottom: '2rem' }}>Your customized interface for analyzing assets, tracking metrics, and coordinating books effortlessly.</p>
-        <button 
-          onClick={() => setOnboardingStep('setup')}
-          style={{ width: '100%', padding: '0.75rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer' }}
-        >
-          Begin Profile Setup
-        </button>
-      </div>
-    );
-  }
-
-  // STEP B: Profile Setup Screen
-  if (onboardingStep === 'setup') {
-    const handleProfileSubmit = (e) => {
-      e.preventDefault();
-      setOnboardingStep('complete');
-    };
-
-    return (
-      <div style={{ padding: '2.5rem 1.5rem', fontFamily: 'sans-serif', maxWidth: '400px', margin: '4rem auto', backgroundColor: '#111827', borderRadius: '12px', border: '1px solid #1f2937', color: '#f3f4f6' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Set Up Your Account</h2>
-        <p style={{ color: '#9ca3af', marginBottom: '2rem', fontSize: '0.9rem' }}>Provide a primary name designation to initialize your system parameters.</p>
-        
-        <form onSubmit={handleProfileSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#d1d5db' }}>Profile or Entity Name</label>
-            <input 
-              type="text" 
-              required 
-              value={profileName}
-              onChange={(e) => setProfileName(e.target.value)}
-              placeholder="e.g., Global Ledger HQ" 
-              style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #374151', backgroundColor: '#1f2937', color: 'white', boxSizing: 'border-box' }}
-            />
-          </div>
-          
-          <button 
-            type="submit"
-            style={{ width: '100%', padding: '0.75rem', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontSize: '1rem', fontWeight: '600', marginTop: '0.5rem', cursor: 'pointer' }}
-          >
-            Save & Finalize
-          </button>
-        </form>
-      </div>
-    );
-  }
-
-  }
-
-  // Original app code resumes smoothly right here:
-  const { bookId } = useParams();
-  const navigate = useNavigate();
-
+  const [book, setBook] = useState(null);
+  const [bookLoading, setBookLoading] = useState(true);
+  const [onboardingStep, setOnboardingStep] = useState(null);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const [businesses, setBusinesses] = useState([]);
   const [loans, setLoans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
   const [saveStatus, setSaveStatus] = useState('idle');
-  const [copied, setCopied] = useState(false);
 
   const [view, setView] = useState('dashboard');
   const [activeBusinessId, setActiveBusinessId] = useState(null);
@@ -166,27 +84,83 @@ const [profileName, setProfileName] = useState('');
   const initialLoad = useRef(true);
 
   useEffect(() => {
-    let active = true;
-    async function load() {
-      const { data, error } = await supabase.from('books').select('data').eq('id', bookId).single();
-      if (!active) return;
-      if (error || !data) {
-        setNotFound(true);
-        setLoading(false);
-        return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setAuthLoading(false);
+      if (!session) {
+        setBook(null);
+        setBookLoading(true);
+        setOnboardingStep(null);
+        setBusinesses([]);
+        setLoans([]);
+        initialLoad.current = true;
       }
-      const payload = data.data || emptyData;
-      setBusinesses(payload.businesses || []);
-      setLoans(payload.loans || []);
-      setLoading(false);
-      initialLoad.current = true;
-    }
-    load();
-    return () => { active = false; };
-  }, [bookId]);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
-    if (loading || notFound) return;
+    if (!session) return;
+    let active = true;
+
+    async function loadBook() {
+      setBookLoading(true);
+      const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (!active) return;
+
+      if (error) {
+        setBookLoading(false);
+        return;
+      }
+
+      if (!data) {
+        const { data: created, error: createError } = await supabase
+          .from('books')
+          .insert({ user_id: session.user.id, data: emptyData, onboarding_complete: false })
+          .select()
+          .single();
+
+        if (!active) return;
+
+        if (createError) {
+          setBookLoading(false);
+          return;
+        }
+
+        setBook(created);
+        setBusinesses(created.data?.businesses || []);
+        setLoans(created.data?.loans || []);
+        setOnboardingStep('welcome');
+        setBookLoading(false);
+        initialLoad.current = true;
+        return;
+      }
+
+      setBook(data);
+      setBusinesses(data.data?.businesses || []);
+      setLoans(data.data?.loans || []);
+      setOnboardingStep(data.onboarding_complete ? null : 'welcome');
+      setBookLoading(false);
+      initialLoad.current = true;
+    }
+
+    loadBook();
+    return () => { active = false; };
+  }, [session]);
+
+  useEffect(() => {
+    if (!book || bookLoading || onboardingStep) return;
     if (initialLoad.current) {
       initialLoad.current = false;
       return;
@@ -197,12 +171,30 @@ const [profileName, setProfileName] = useState('');
       const { error } = await supabase
         .from('books')
         .update({ data: { businesses, loans }, updated_at: new Date().toISOString() })
-        .eq('id', bookId);
+        .eq('id', book.id);
       setSaveStatus(error ? 'error' : 'saved');
       if (!error) setTimeout(() => setSaveStatus('idle'), 1500);
     }, 600);
     return () => { if (saveTimeout.current) clearTimeout(saveTimeout.current); };
   }, [businesses, loans]);
+
+  async function completeProfileSetup(name) {
+    setSavingProfile(true);
+    const { error } = await supabase
+      .from('books')
+      .update({ profile_name: name, onboarding_complete: true, updated_at: new Date().toISOString() })
+      .eq('id', book.id);
+    setSavingProfile(false);
+    if (!error) {
+      setBook((b) => ({ ...b, profile_name: name, onboarding_complete: true }));
+      setOnboardingStep(null);
+      initialLoad.current = true;
+    }
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+  }
 
   const businessTotals = useMemo(() => {
     return businesses.map((b) => {
@@ -264,13 +256,19 @@ const [profileName, setProfileName] = useState('');
     );
   }, []);
 
-  function copyLink() {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-stone-100 flex items-center justify-center text-stone-500">
+        <Loader2 className="animate-spin mr-2" size={20} /> Loading…
+      </div>
+    );
   }
 
-  if (loading) {
+  if (!session) {
+    return <Auth onAuthSuccess={(s) => setSession(s)} />;
+  }
+
+  if (bookLoading) {
     return (
       <div className="min-h-screen bg-stone-100 flex items-center justify-center text-stone-500">
         <Loader2 className="animate-spin mr-2" size={20} /> Loading your ledger…
@@ -278,16 +276,12 @@ const [profileName, setProfileName] = useState('');
     );
   }
 
-  if (notFound) {
-    return (
-      <div className="min-h-screen bg-stone-100 flex flex-col items-center justify-center text-stone-700 px-4 text-center">
-        <h1 className="font-serif text-2xl mb-2">Ledger not found</h1>
-        <p className="text-stone-500 mb-4 text-sm">This link doesn't match any saved ledger.</p>
-        <button onClick={() => navigate('/')} className="bg-amber-700 text-white px-4 py-2 rounded-lg font-medium hover:bg-amber-800">
-          Go home
-        </button>
-      </div>
-    );
+  if (onboardingStep === 'welcome') {
+    return <Welcome onContinue={() => setOnboardingStep('setup')} />;
+  }
+
+  if (onboardingStep === 'setup') {
+    return <ProfileSetup onSubmit={completeProfileSetup} saving={savingProfile} />;
   }
 
   return (
@@ -298,7 +292,9 @@ const [profileName, setProfileName] = useState('');
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
           <div>
             <h1 className="font-serif text-2xl tracking-tight">Ledger & Lots</h1>
-            <p className="text-stone-400 text-xs font-mono mt-0.5">your businesses, your loans, one page</p>
+            <p className="text-stone-400 text-xs font-mono mt-0.5">
+              {book?.profile_name ? book.profile_name : 'your businesses, your loans, one page'}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex gap-1 bg-stone-800 rounded-full p-1">
@@ -321,8 +317,8 @@ const [profileName, setProfileName] = useState('');
                 </button>
               ))}
             </div>
-            <button onClick={copyLink} title="Copy private link" className="p-2 rounded-full bg-stone-800 text-stone-300 hover:text-white">
-              {copied ? <Check size={16} /> : <Copy size={16} />}
+            <button onClick={handleLogout} title="Log out" className="p-2 rounded-full bg-stone-800 text-stone-300 hover:text-white">
+              <LogOut size={16} />
             </button>
           </div>
         </div>
@@ -399,7 +395,7 @@ const [profileName, setProfileName] = useState('');
       )}
     </div>
   );
-
+}
 
 function Dashboard({ grandTotals, businessTotals, loans, onOpenBusiness, onGoLoans }) {
   return (
@@ -769,3 +765,6 @@ function AddPaymentForm({ onSubmit }) {
     </form>
   );
 }
+
+
+Once committed, let me know — last steps are deleting src/Landing.jsx and checking the Vercel deployment.​​​​​​​​​​​​​​​​
