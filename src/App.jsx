@@ -58,7 +58,8 @@ function Field({ label, children }) {
 
 const inputCls = "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-700/40 focus:border-amber-700";
 
-export default function App() {  // 1. Setup authentication states
+export default function App() {
+  // 1. Setup authentication states
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -86,9 +87,11 @@ export default function App() {  // 1. Setup authentication states
   if (!session) {
     return <Auth onAuthSuccess={(userSession) => setSession(userSession)} />;
   }
-) {
+
+  // Original app code resumes smoothly right here:
   const { bookId } = useParams();
   const navigate = useNavigate();
+
 
   const [businesses, setBusinesses] = useState([]);
   const [loans, setLoans] = useState([]);
