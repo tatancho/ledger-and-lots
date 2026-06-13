@@ -399,7 +399,7 @@ const [profileName, setProfileName] = useState('');
       )}
     </div>
   );
-}
+
 
 function Dashboard({ grandTotals, businessTotals, loans, onOpenBusiness, onGoLoans }) {
   return (
