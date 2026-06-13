@@ -62,6 +62,9 @@ export default function App() {
   // 1. Setup authentication states
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [onboardingStep, setOnboardingStep] = useState('welcome'); // 'welcome', 'setup', or 'complete'
+const [profileName, setProfileName] = useState('');
+
 
   // 2. Listen for login/logout changes
   useEffect(() => {
@@ -84,8 +87,63 @@ export default function App() {
   }
 
   // 4. SECURITY ACCESS GATE: If not logged in, force the Auth screen
+    // 4. SECURITY ACCESS GATE & ONBOARDING FLOW
   if (!session) {
     return <Auth onAuthSuccess={(userSession) => setSession(userSession)} />;
+  }
+
+  // STEP A: Welcome Landing Page
+  if (onboardingStep === 'welcome') {
+    return (
+      <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', fontFamily: 'sans-serif', maxWidth: '500px', margin: '4rem auto', backgroundColor: '#111827', borderRadius: '12px', border: '1px solid #1f2937', color: '#f3f4f6' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '1rem' }}>Welcome to GothamBank Workspace 👋</h1>
+        <p style={{ color: '#9ca3af', lineHeight: '1.5', marginBottom: '2rem' }}>Your customized interface for analyzing assets, tracking metrics, and coordinating books effortlessly.</p>
+        <button 
+          onClick={() => setOnboardingStep('setup')}
+          style={{ width: '100%', padding: '0.75rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer' }}
+        >
+          Begin Profile Setup
+        </button>
+      </div>
+    );
+  }
+
+  // STEP B: Profile Setup Screen
+  if (onboardingStep === 'setup') {
+    const handleProfileSubmit = (e) => {
+      e.preventDefault();
+      setOnboardingStep('complete');
+    };
+
+    return (
+      <div style={{ padding: '2.5rem 1.5rem', fontFamily: 'sans-serif', maxWidth: '400px', margin: '4rem auto', backgroundColor: '#111827', borderRadius: '12px', border: '1px solid #1f2937', color: '#f3f4f6' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Set Up Your Account</h2>
+        <p style={{ color: '#9ca3af', marginBottom: '2rem', fontSize: '0.9rem' }}>Provide a primary name designation to initialize your system parameters.</p>
+        
+        <form onSubmit={handleProfileSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#d1d5db' }}>Profile or Entity Name</label>
+            <input 
+              type="text" 
+              required 
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+              placeholder="e.g., Global Ledger HQ" 
+              style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #374151', backgroundColor: '#1f2937', color: 'white', boxSizing: 'border-box' }}
+            />
+          </div>
+          
+          <button 
+            type="submit"
+            style={{ width: '100%', padding: '0.75rem', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontSize: '1rem', fontWeight: '600', marginTop: '0.5rem', cursor: 'pointer' }}
+          >
+            Save & Finalize
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   }
 
   // Original app code resumes smoothly right here:
