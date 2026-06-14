@@ -10,8 +10,10 @@ const t = {
 const btnPrimary = {
   width: '100%', background: '#c8a96e', color: '#0a0a0f', border: 'none',
   borderRadius: 10, padding: '13px', fontSize: 15, fontWeight: 700,
-  cursor: 'pointer', fontFamily: "'Syne', sans-serif', letterSpacing: 0.3,
+  cursor: 'pointer', fontFamily: "'Syne', sans-serif", letterSpacing: 0.3,
   transition: 'opacity 0.2s',
+};
+
 };
 
 const inputStyle = {
